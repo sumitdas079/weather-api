@@ -46,3 +46,10 @@ jobs:
         uses: actions-js/push@v1
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Upload log file as artifact
+        if: always()  # Ensure this step runs even if the script fails
+        uses: actions/upload-artifact@v3
+        with:
+          name: weather-logs  # Artifact name you will see in the GitHub Actions tab
+          path: updates.log
