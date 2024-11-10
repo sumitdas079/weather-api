@@ -2,6 +2,8 @@ import requests
 from loguru import logger
 from icecream import ic
 
+logger.add("updates.log", rotation="500 KB", retention="10 days", level="INFO")
+
 # get city name based on coordinates
 def fetch_city_name(latitude, longitude):
     url = "https://api-bdc.net/data/reverse-geocode-client"
