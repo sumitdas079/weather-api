@@ -1,4 +1,5 @@
 import requests
+from loguru import logger
 from icecream import ic
 
 # get city name based on coordinates
@@ -19,7 +20,8 @@ def fetch_city_name(latitude, longitude):
         return city
     
     except requests.RequestException as e:
-        print(f"An error occurred during reverse geocoding: {e}")
+        # print(f"An error occurred during reverse geocoding: {e}")
+        logger.error(f"Cannot fetch location")
         return "Unknown location"
 
 # fetch weather update of the city
@@ -43,13 +45,14 @@ def fetch_weather(latitude, longitude):
             windspeed = current_weather.get("windspeed", "N/A")
             weather_time = current_weather.get("time", "N/A")
             
-            print(f"Current weather in {city} ({latitude}, {longitude}):")
-            print(f"Temperature: {temperature}°C")
-            print(f"Wind Speed: {windspeed} m/s")
-            print(f"Observation Time: {weather_time}")
+            # print(f"Current weather in {city} ({latitude}, {longitude}):")
+            # print(f"Temperature: {temperature}°C")
+            # print(f"Wind Speed: {windspeed} m/s")
+            # print(f"Observation Time: {weather_time}")
+            logger.info(f"Weather stats of {city}: Temp={temperature}°C, Wind Speed={windspeed} m/s, Observation Time: {weather_time}")
         else:
-            print("No current weather data available.")
-    
+            # print("No current weather data available.")
+            logger.error("No current weather data available.")
     except requests.RequestException as e:
         print(f"An error occurred while fetching weather data: {e}")
 
