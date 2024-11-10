@@ -44,3 +44,5 @@ jobs:
           
       - name: push changes
         uses: github-actions-x/commit@v2
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
