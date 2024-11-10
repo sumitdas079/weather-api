@@ -1,47 +1,58 @@
-import openmeteo_requests
-from dotenv import load_dotenv
-import os
+import requests
 from icecream import ic
-import requests_cache
-import pandas as pd
-from retry_requests import retry
 
-load_dotenv()
+# get city name based on coordinates
+def fetch_city_name(latitude, longitude):
+    url = "https://api-bdc.net/data/reverse-geocode-client"
+    params = {
+        "latitude": latitude,
+        "longitude": longitude,
+        "localityLanguage": "en",
+    }
+    
+    try:
+        response = requests.get(url, params=params)
+        response.raise_for_status()
+        data = response.json()
+        # ic(data)
+        city = data.get("locality", data.get("principalSubdivision", "Unknown location"))
+        return city
+    
+    except requests.RequestException as e:
+        print(f"An error occurred during reverse geocoding: {e}")
+        return "Unknown location"
 
-# Setup the Open-Meteo API client with cache and retry on error
-cache_session = requests_cache.CachedSession('.cache', expire_after = 3600)
-retry_session = retry(cache_session, retries = 5, backoff_factor = 0.2)
-openmeteo = openmeteo_requests.Client(session = retry_session)
+# fetch weather update of the city
+def fetch_weather(latitude, longitude):
+    city = fetch_city_name(latitude, longitude)
+    weather_url = "https://api.open-meteo.com/v1/forecast"
+    weather_params = {
+        "latitude": latitude,
+        "longitude": longitude,
+        "current_weather": True
+    }
+    
+    try:
+        response = requests.get(weather_url, params=weather_params)
+        response.raise_for_status()
+        data = response.json()
+        current_weather = data.get("current_weather", {})
 
-# Make sure all required weather variables are listed here
-# The order of variables in hourly or daily is important to assign them correctly below
-url = os.environ.get('WEATHER_API')
-params = {
-	"latitude": 22.5744,
-	"longitude": 88.3629,
-	"hourly": "temperature_2m"
-}
-responses = openmeteo.weather_api(url, params=params)
+        if current_weather:
+            temperature = current_weather.get("temperature", "N/A")
+            windspeed = current_weather.get("windspeed", "N/A")
+            weather_time = current_weather.get("time", "N/A")
+            
+            print(f"Current weather in {city} ({latitude}, {longitude}):")
+            print(f"Temperature: {temperature}°C")
+            print(f"Wind Speed: {windspeed} m/s")
+            print(f"Observation Time: {weather_time}")
+        else:
+            print("No current weather data available.")
+    
+    except requests.RequestException as e:
+        print(f"An error occurred while fetching weather data: {e}")
 
-# Process first location. Add a for-loop for multiple locations or weather models
-response = responses[0]
-ic(response)
-print(f"Coordinates {response.Latitude()}°N {response.Longitude()}°E")
-print(f"Elevation {response.Elevation()} m asl")
-print(f"Timezone {response.Timezone()} {response.TimezoneAbbreviation()}")
-print(f"Timezone difference to GMT+0 {response.UtcOffsetSeconds()} s")
-
-# Process hourly data. The order of variables needs to be the same as requested.
-hourly = response.Hourly()
-hourly_temperature_2m = hourly.Variables(0).ValuesAsNumpy()
-
-hourly_data = {"date": pd.date_range(
-	start = pd.to_datetime(hourly.Time(), unit = "s", utc = True),
-	end = pd.to_datetime(hourly.TimeEnd(), unit = "s", utc = True),
-	freq = pd.Timedelta(seconds = hourly.Interval()),
-	inclusive = "left"
-)}
-hourly_data["temperature_2m"] = hourly_temperature_2m
-
-hourly_dataframe = pd.DataFrame(data = hourly_data)
-print(hourly_dataframe)
+latitude = 22.5744   
+longitude = 88.3629  
+fetch_weather(latitude, longitude)
