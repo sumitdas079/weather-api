@@ -17,6 +17,7 @@ WORKDIR /weather-api
 
 # Create application directory and set permissions
 RUN mkdir -p /weather-api && chmod -R 777 /weather-api
+
 # Copy only requirements first for caching
 COPY requirements.txt /weather-api/
 
