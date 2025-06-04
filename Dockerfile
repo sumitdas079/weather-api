@@ -1,31 +1,36 @@
-# Use an official Python runtime as a parent image
-FROM python:3.9-slim
+# Use a minimal Python image
+FROM python:3.11-alpine
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    && rm -rf /var/lib/apt/lists/*
+# Install system dependencies using apk
+RUN apk add --no-cache \
+    build-base \
+    libffi-dev \
+    gcc \
+    musl-dev \
+    python3-dev \
+    libressl-dev
 
-# Create a non-root user
-RUN useradd -m appuser
+# Create a non-root user and set workdir
+RUN adduser -D appuser
+WORKDIR /weather-api 
 
-# Set the working directory
-WORKDIR /weather-api
-
-# Create application directory and set permissions
+# Set permissions on the directory (as root)
 RUN mkdir -p /weather-api && chmod -R 777 /weather-api
 
-# Copy only requirements first for caching
-COPY requirements.txt /weather-api/
+# Copy only requirements first for better caching
+COPY requirements.txt .
 
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Optionally remove build dependencies to slim the image
+RUN apk del build-base gcc musl-dev python3-dev libressl-dev libffi-dev
+
 # Copy the rest of the application code
-COPY . /weather-api/
+COPY . .
 
 # Change to non-root user
 USER appuser
